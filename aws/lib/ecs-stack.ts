@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { TPropsDeployMode } from "../types/parameter";
-import { createEcrRepository } from "./functions/ecr";
+import { createEcrRepository, dockerImagePushForEcr } from "./functions/ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { createLoadBalancerFrontAndBack } from "./functions/loadbalancer-front-and-back";
@@ -29,10 +29,26 @@ export class EcsStack extends cdk.Stack {
         this,
         `${props.projectName}-backend-repo`
       );
+
+      dockerImagePushForEcr(
+        this,
+        `${props.projectName}-frontend-image`,
+        frontRepo,
+        `../../../applications/${props.deployMode.deployFrontAppFolderName}`
+      );
+
       const backRepo = createEcrRepository(
         this,
         `${props.projectName}-frontend-repo`
       );
+
+      dockerImagePushForEcr(
+        this,
+        `${props.projectName}-backend-image`,
+        backRepo,
+        `../../../applications/${props.deployMode.deployBackAppFolderName}`
+      );
+
       const alb = createLoadBalancerFrontAndBack(
         this,
         props.projectName,
@@ -65,6 +81,14 @@ export class EcsStack extends cdk.Stack {
       alb.targetBackGroup.addTarget(fargateBack);
     } else {
       const repo = createEcrRepository(this, `${props.projectName}-repo`);
+
+      dockerImagePushForEcr(
+        this,
+        `${props.projectName}-backend-image`,
+        repo,
+        `../../../applications/${props.deployMode.deployAppFolderName}`
+      );
+
       const alb = createLoadBalancerSingleApp(
         this,
         props.projectName,
@@ -72,7 +96,7 @@ export class EcsStack extends cdk.Stack {
         props.deployMode.port,
         props.vpc
       );
-      const task = createEcsTaskDefinition(scope, props.projectName);
+      const task = createEcsTaskDefinition(this, props.projectName);
       const fargate = createFargateService(
         this,
         props.projectName,

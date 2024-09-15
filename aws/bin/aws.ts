@@ -5,14 +5,26 @@ import { EcsStack } from "../lib/ecs-stack";
 import { VpcStack } from "../lib/vpc-stack";
 import { TPropsParameters } from "../types/parameter";
 
+// const parameters: TPropsParameters = {
+//   projectName: "sample-project",
+//   deployMode: {
+//     type: "frontAndBack",
+//     frontendHealthCheckPath: "/api/health-check",
+//     deployFrontAppFolderName: "nextjs",
+//     frontendPort: 3000,
+//     backendHealthCheckPath: "/api/health-check",
+//     backendPort: 8000,
+//     deployBackAppFolderName: "temp-fastapi",
+//   },
+// };
+
 const parameters: TPropsParameters = {
   projectName: "sample-project",
   deployMode: {
-    type: "frontAndBack",
-    frontendHealthCheckPath: "/",
-    frontendPort: 80,
-    backendHealthCheckPath: "/",
-    backendPort: 8080,
+    type: "singleApplication",
+    healthCheckPath: "/healthz",
+    port: 8000,
+    deployAppFolderName: "temp-streamlit",
   },
 };
 
