@@ -87,5 +87,5 @@ export function createLoadBalancerFrontAndBack(
     targetGroups: [targetBackGroup],
   });
 
-  return { targetFrontGroup, targetBackGroup };
+  return { targetFrontGroup, targetBackGroup, albSG };
 }

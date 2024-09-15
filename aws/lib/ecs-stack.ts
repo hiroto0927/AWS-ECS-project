@@ -1,7 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { TPropsDeployMode } from "../types/parameter";
-import { createEcrRepository, dockerImagePushForEcr } from "./functions/ecr";
+import { createEcrRepository } from "./functions/ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { createLoadBalancerFrontAndBack } from "./functions/loadbalancer-front-and-back";
@@ -15,6 +15,9 @@ type TProps = cdk.StackProps & {
   vpc: ec2.Vpc;
 };
 
+const frontendDefultRepoName = "common-nextjs";
+const backDefaultRepoName = "common-fastapi";
+
 export class EcsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TProps) {
     super(scope, id, props);
@@ -25,29 +28,8 @@ export class EcsStack extends cdk.Stack {
     });
 
     if (props.deployMode.type === "frontAndBack") {
-      const frontRepo = createEcrRepository(
-        this,
-        `${props.projectName}-backend-repo`
-      );
-
-      dockerImagePushForEcr(
-        this,
-        `${props.projectName}-frontend-image`,
-        frontRepo,
-        `../../../applications/${props.deployMode.deployFrontAppFolderName}`
-      );
-
-      const backRepo = createEcrRepository(
-        this,
-        `${props.projectName}-frontend-repo`
-      );
-
-      dockerImagePushForEcr(
-        this,
-        `${props.projectName}-backend-image`,
-        backRepo,
-        `../../../applications/${props.deployMode.deployBackAppFolderName}`
-      );
+      createEcrRepository(this, `${props.projectName}-back-repo`);
+      createEcrRepository(this, `${props.projectName}-front-repo`);
 
       const alb = createLoadBalancerFrontAndBack(
         this,
@@ -63,31 +45,26 @@ export class EcsStack extends cdk.Stack {
         `${props.projectName}-frontend`,
         ecsCluster,
         props.vpc,
-        frontRepo,
+        frontendDefultRepoName,
         props.deployMode.frontendPort,
-        createEcsTaskDefinition(this, `${props.projectName}-frontend`)
+        createEcsTaskDefinition(this, `${props.projectName}-frontend`),
+        alb.albSG
       );
       const fargateBack = createFargateService(
         this,
         `${props.projectName}-backend`,
         ecsCluster,
         props.vpc,
-        backRepo,
+        backDefaultRepoName,
         props.deployMode.backendPort,
-        createEcsTaskDefinition(this, `${props.projectName}-backend`)
+        createEcsTaskDefinition(this, `${props.projectName}-backend`),
+        alb.albSG
       );
 
       alb.targetFrontGroup.addTarget(fargateFront);
       alb.targetBackGroup.addTarget(fargateBack);
     } else {
-      const repo = createEcrRepository(this, `${props.projectName}-repo`);
-
-      dockerImagePushForEcr(
-        this,
-        `${props.projectName}-backend-image`,
-        repo,
-        `../../../applications/${props.deployMode.deployAppFolderName}`
-      );
+      createEcrRepository(this, `${props.projectName}-repo`);
 
       const alb = createLoadBalancerSingleApp(
         this,
@@ -102,12 +79,13 @@ export class EcsStack extends cdk.Stack {
         props.projectName,
         ecsCluster,
         props.vpc,
-        repo,
+        backDefaultRepoName,
         props.deployMode.port,
-        task
+        task,
+        alb.albSG
       );
 
-      alb.addTarget(fargate);
+      alb.targetGroup.addTarget(fargate);
     }
   }
 }

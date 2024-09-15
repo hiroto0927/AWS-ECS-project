@@ -2,7 +2,23 @@ import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 
-export function createEcsTaskDefinition(scope: Construct, name: string) {
+type TPropsCpu = 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384;
+type TPropsMemoryLimitMiB =
+  | 512
+  | 1024
+  | 2048
+  | 4096
+  | 8192
+  | 16384
+  | 32768
+  | 65536;
+
+export function createEcsTaskDefinition(
+  scope: Construct,
+  name: string,
+  cpu?: TPropsCpu,
+  memoryLimitMiB?: TPropsMemoryLimitMiB
+) {
   const ecsExecutionRole = new iam.Role(scope, `${name}-exec-role`, {
     assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
   });
@@ -41,6 +57,9 @@ export function createEcsTaskDefinition(scope: Construct, name: string) {
     {
       executionRole: ecsExecutionRole,
       taskRole: ecsTaskRole,
+      cpu: cpu ?? 256,
+      memoryLimitMiB: memoryLimitMiB ?? 512,
+      family: name,
     }
   );
 

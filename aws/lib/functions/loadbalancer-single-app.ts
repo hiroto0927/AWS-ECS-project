@@ -75,5 +75,5 @@ export function createLoadBalancerSingleApp(
     targetGroups: [targetGroup],
   });
 
-  return targetGroup;
+  return { targetGroup, albSG };
 }
