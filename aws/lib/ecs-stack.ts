@@ -15,9 +15,6 @@ type TProps = cdk.StackProps & {
   vpc: ec2.Vpc;
 };
 
-const frontendDefultRepoName = "common-nextjs";
-const backDefaultRepoName = "common-fastapi";
-
 export class EcsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TProps) {
     super(scope, id, props);
@@ -45,7 +42,7 @@ export class EcsStack extends cdk.Stack {
         `${props.projectName}-frontend`,
         ecsCluster,
         props.vpc,
-        frontendDefultRepoName,
+        props.deployMode.defaultFrontRepoName,
         props.deployMode.frontendPort,
         createEcsTaskDefinition(this, `${props.projectName}-frontend`),
         alb.albSG
@@ -55,7 +52,7 @@ export class EcsStack extends cdk.Stack {
         `${props.projectName}-backend`,
         ecsCluster,
         props.vpc,
-        backDefaultRepoName,
+        props.deployMode.defaultBackRepoName,
         props.deployMode.backendPort,
         createEcsTaskDefinition(this, `${props.projectName}-backend`),
         alb.albSG
@@ -79,7 +76,7 @@ export class EcsStack extends cdk.Stack {
         props.projectName,
         ecsCluster,
         props.vpc,
-        backDefaultRepoName,
+        props.deployMode.defaultRepoName,
         props.deployMode.port,
         task,
         alb.albSG

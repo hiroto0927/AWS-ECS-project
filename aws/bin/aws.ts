@@ -11,8 +11,10 @@ const parameters: TPropsParameters = {
     type: "frontAndBack",
     frontendHealthCheckPath: "/api/health-check",
     frontendPort: 3000,
+    defaultFrontRepoName: "common-nextjs",
     backendHealthCheckPath: "/api/health-check",
     backendPort: 8000,
+    defaultBackRepoName: "common-fastapi",
   },
 };
 
