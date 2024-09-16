@@ -1,5 +1,5 @@
 {
-  "name": "Bedrock",
+  "name": "ecs-deploy-project",
   "dockerComposeFile": ["../docker-compose-devcontainer.yaml"],
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
@@ -8,6 +8,10 @@
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {
       "version": "2.17.15"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.10.12"
     }
   },
 
@@ -27,7 +31,6 @@
         "bierner.markdown-preview-github-styles",
         "bierner.markdown-mermaid",
         "ms-python.vscode-pylance",
-        "Boto3typed.boto3-ide",
         "ms-python.black-formatter",
         "ms-python.python"
       ],
@@ -38,7 +41,10 @@
         "tailwindCSS.experimental.classRegex": [
           ["tv\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
         ],
-        "markdown-preview-github-styles.colorTheme": "light"
+        "markdown-preview-github-styles.colorTheme": "light",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        }
       }
     }
   }

@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "service-update"
+version = "0.1.0"
+description = ""
+authors = ["hiroto0927 <hiroto.0927.123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+boto3 = "^1.35.19"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

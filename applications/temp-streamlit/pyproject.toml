@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "temp-streamlit"
+version = "0.1.0"
+description = ""
+authors = ["hiroto0927 <hiroto.0927.123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "^1.38.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
