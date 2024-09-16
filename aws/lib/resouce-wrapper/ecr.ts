@@ -9,6 +9,7 @@ export function createEcrRepository(
   return new ecr.Repository(scope, name, {
     repositoryName: name,
     removalPolicy: cdk.RemovalPolicy.DESTROY,
+    emptyOnDelete: true,
     lifecycleRules: [
       {
         maxImageCount: 3,

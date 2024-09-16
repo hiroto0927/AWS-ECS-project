@@ -1,17 +1,7 @@
 import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
-
-type TPropsCpu = 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384;
-type TPropsMemoryLimitMiB =
-  | 512
-  | 1024
-  | 2048
-  | 4096
-  | 8192
-  | 16384
-  | 32768
-  | 65536;
+import { TPropsCpu, TPropsMemoryLimitMiB } from "../../types/parameter";
 
 export function createEcsTaskDefinition(
   scope: Construct,
@@ -19,15 +9,15 @@ export function createEcsTaskDefinition(
   cpu?: TPropsCpu,
   memoryLimitMiB?: TPropsMemoryLimitMiB
 ) {
-  const ecsExecutionRole = new iam.Role(scope, `${name}-exec-role`, {
+  const taskExecRole = new iam.Role(scope, `${name}-exec-role`, {
     assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
   });
 
-  const ecsTaskRole = new iam.Role(scope, `${name}-ecs-task-role`, {
+  const taskRole = new iam.Role(scope, `${name}-ecs-task-role`, {
     assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
   });
 
-  ecsTaskRole.attachInlinePolicy(
+  taskRole.attachInlinePolicy(
     new iam.Policy(scope, `${name}-ecs-task-exec-policy`, {
       statements: [
         new iam.PolicyStatement({
@@ -45,7 +35,7 @@ export function createEcsTaskDefinition(
     })
   );
 
-  ecsExecutionRole.addManagedPolicy(
+  taskExecRole.addManagedPolicy(
     iam.ManagedPolicy.fromAwsManagedPolicyName(
       "service-role/AmazonECSTaskExecutionRolePolicy"
     )
@@ -55,13 +45,13 @@ export function createEcsTaskDefinition(
     scope,
     `${name}-task-def`,
     {
-      executionRole: ecsExecutionRole,
-      taskRole: ecsTaskRole,
+      executionRole: taskExecRole,
+      taskRole: taskRole,
       cpu: cpu ?? 256,
       memoryLimitMiB: memoryLimitMiB ?? 512,
       family: name,
     }
   );
 
-  return taskDefinition;
+  return { taskDefinition, taskExecRole, taskRole };
 }
