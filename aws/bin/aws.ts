@@ -4,7 +4,7 @@ import { NetworkStack } from "../lib/network-stack";
 import { TParameters } from "../types/parameter";
 
 const parameters: TParameters = {
-  projectName: "sample-project", // プロジェクト名を入力
+  projectName: "sample", // プロジェクト名を入力
   env: "dev", // 環境名を入力
   deployMode: {
     type: "frontAndBack", // アプリケーションの構成タイプ

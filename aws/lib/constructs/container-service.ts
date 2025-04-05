@@ -21,8 +21,11 @@ export class ContainerFargateServicesConstruct extends Construct {
     const config = props.config;
 
     if (config.deployMode.type === "frontAndBack") {
+      const frontendName = `${config.projectName}-${config.env}-front`;
+      const backendName = `${config.projectName}-${config.env}-back`;
+
       const backTask = new TaskDefinitionConstruct(this, `FargateBackTaskDef`, {
-        name: `${config.projectName}-${config.env}-back-task-def`,
+        name: backendName,
         cpu: config.deployMode.backendCpu,
         memory: config.deployMode.backendMemoryLimitMiB,
       });
@@ -30,14 +33,14 @@ export class ContainerFargateServicesConstruct extends Construct {
       backTask.addContainer(
         config.deployMode.defaultBackRepoName,
         config.deployMode.backendPort,
-        `${config.projectName}-${config.env}-backend`
+        backendName
       );
 
       const frontTask = new TaskDefinitionConstruct(
         this,
         `FargateFrontTaskDef`,
         {
-          name: `${config.projectName}-${config.env}-front-task-def`,
+          name: frontendName,
           cpu: config.deployMode.frontendCpu,
           memory: config.deployMode.frontendMemoryLimitMiB,
         }
@@ -46,7 +49,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       frontTask.addContainer(
         config.deployMode.defaultFrontRepoName,
         config.deployMode.frontendPort,
-        `${config.projectName}-${config.env}-frontend`
+        frontendName
       );
 
       const securityGroup = new ec2.SecurityGroup(this, `SecurityGroup`, {
@@ -77,7 +80,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       });
 
       new ServiceUpdateConstruct(this, `UpdateFrontService`, {
-        projectName: config.projectName,
+        name: frontendName,
         env: config.env,
         cluster: props.cluster,
         service: frontService,
@@ -85,10 +88,9 @@ export class ContainerFargateServicesConstruct extends Construct {
         taskExecRole: frontTask.taskExecRole,
         port: config.deployMode.frontendPort,
         family: frontTask.definition.family,
-        containerName: `${config.projectName}-${config.env}-frontend`,
       });
       new ServiceUpdateConstruct(this, `UpdateBackendService`, {
-        projectName: config.projectName,
+        name: backendName,
         env: config.env,
         cluster: props.cluster,
         service: backService,
@@ -96,15 +98,16 @@ export class ContainerFargateServicesConstruct extends Construct {
         taskExecRole: backTask.taskExecRole,
         port: config.deployMode.backendPort,
         family: backTask.definition.family,
-        containerName: `${config.projectName}-${config.env}-backend`,
       });
 
       this.services = [frontService, backService];
     }
 
     if (config.deployMode.type === "singleApplication") {
+      const applicationName = `${config.projectName}-${config.env}-app`;
+
       const task = new TaskDefinitionConstruct(this, `FargateTaskDef`, {
-        name: `${config.projectName}-${config.env}-task-def`,
+        name: applicationName,
         cpu: config.deployMode.cpu,
         memory: config.deployMode.memoryLimitMiB,
       });
@@ -112,7 +115,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       task.addContainer(
         config.deployMode.defaultRepoName,
         config.deployMode.port,
-        `${config.projectName}-${config.env}-app`
+        applicationName
       );
 
       const securityGroup = new ec2.SecurityGroup(this, `SecurityGroup`, {
@@ -127,7 +130,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       );
 
       const service = new ecs.FargateService(this, `FargateService`, {
-        serviceName: `${config.projectName}-${config.env}-service`,
+        serviceName: applicationName,
         cluster: props.cluster,
         vpcSubnets: { subnets: props.vpc.privateSubnets },
         taskDefinition: task.definition,
@@ -135,7 +138,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       });
 
       new ServiceUpdateConstruct(this, `ServiceUpdate`, {
-        projectName: config.projectName,
+        name: applicationName,
         env: config.env,
         cluster: props.cluster,
         service: service,
@@ -143,7 +146,6 @@ export class ContainerFargateServicesConstruct extends Construct {
         taskExecRole: task.taskExecRole,
         port: config.deployMode.port,
         family: task.definition.family,
-        containerName: `${config.projectName}-${config.env}-app`,
       });
 
       this.services = [service];

@@ -9,7 +9,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 
 interface TServiceUpdate {
-  projectName: string;
+  name: string;
   env: string;
   port: number;
   family: string;
@@ -17,7 +17,6 @@ interface TServiceUpdate {
   taskExecRole: iam.IRole;
   cluster: ecs.ICluster;
   service: ecs.IService;
-  containerName: string;
 }
 
 export class ServiceUpdateConstruct extends Construct {
@@ -25,7 +24,7 @@ export class ServiceUpdateConstruct extends Construct {
     super(scope, id);
 
     const repository = new ecr.Repository(this, "EcrRepository", {
-      repositoryName: `${props.projectName}-${props.env}-repository`,
+      repositoryName: props.name,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       emptyOnDelete: true,
       lifecycleRules: [
@@ -36,7 +35,7 @@ export class ServiceUpdateConstruct extends Construct {
     });
 
     const fn = new lambda.Function(this, "ServiceUpdateLambda", {
-      functionName: `${props.projectName}-${props.env}-service-update`,
+      functionName: props.name,
       runtime: lambda.Runtime.PYTHON_3_12,
       code: lambda.Code.fromAsset(
         path.join(__dirname, "../functions/service-update/app")
@@ -51,7 +50,7 @@ export class ServiceUpdateConstruct extends Construct {
         SERVICE_ARN: props.service.serviceArn,
         PORT: props.port.toString(),
         FAMILY: props.family,
-        CONTAINER_NAME: props.containerName,
+        CONTAINER_NAME: props.name,
       },
     });
 
@@ -80,7 +79,7 @@ export class ServiceUpdateConstruct extends Construct {
       })
     );
 
-    new events.Rule(scope, `EventRule`, {
+    new events.Rule(this, `EventRule`, {
       eventPattern: {
         source: ["aws.ecr"],
         detailType: ["ECR Image Action"],
