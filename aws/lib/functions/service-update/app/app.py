@@ -1,16 +1,17 @@
 import boto3
 import json
+import os
 
-from app.env import (
-    CLUSTER_ARN,
-    CPU,
-    MEMORY,
-    PORT,
-    SERVICE_ARN,
-    TASK_EXEC_ROLE_ARN,
-    TASK_ROLE_ARN,
-    FAMILY,
-)
+
+SERVICE_NAME = os.getenv("SERVICE_NAME")
+TASK_ROLE_ARN = os.getenv("TASK_ROLE_ARN")
+TASK_EXEC_ROLE_ARN = os.getenv("TASK_EXEC_ROLE_ARN")
+MEMORY = int(os.getenv("MEMORY"))
+CPU = int(os.getenv("CPU"))
+CLUSTER_ARN = os.getenv("CLUSTER_ARN")
+SERVICE_ARN = os.getenv("SERVICE_ARN")
+PORT = int(os.getenv("PORT"))
+FAMILY = os.getenv("FAMILY")
 
 ecs_client = boto3.client("ecs")
 
@@ -59,8 +60,6 @@ def create_task_definition(event):
         ],
     )
 
-    print(response)
-
     return response["taskDefinition"]
 
 
@@ -73,7 +72,5 @@ def update_service(task_definition):
         service=SERVICE_ARN,
         taskDefinition=task_definition["taskDefinitionArn"],
     )
-
-    print(response)
 
     return response

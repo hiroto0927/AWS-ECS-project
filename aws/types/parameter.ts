@@ -32,7 +32,10 @@ export type TPropsDeployMode =
       defaultBackRepoName: string;
     };
 
+type TEnv = "dev" | "stg" | "prd";
+
 export type TPropsParameters = {
   projectName: string;
+  env: TEnv;
   deployMode: TPropsDeployMode;
 };

@@ -18,6 +18,7 @@ export function createLoadBalancerFrontAndBack(
   });
 
   albSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80));
+  albSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443));
 
   const alb = new elbv2.ApplicationLoadBalancer(scope, `${projectName}-alb`, {
     loadBalancerName: `${projectName}-alb`,

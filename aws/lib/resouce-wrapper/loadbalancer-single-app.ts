@@ -1,12 +1,6 @@
-import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-
-type TProps = cdk.StackProps & {
-  vpc: ec2.Vpc;
-  containerPort: number;
-};
 
 export function createLoadBalancerSingleApp(
   scope: Construct,

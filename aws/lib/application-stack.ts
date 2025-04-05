@@ -1,6 +1,6 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { TPropsDeployMode } from "../types/parameter";
+import { TPropsParameters } from "../types/parameter";
 import { createEcrRepository } from "./resouce-wrapper/ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -11,71 +11,72 @@ import { createEcsTaskDefinition } from "./resouce-wrapper/ecs-task-def";
 import { createServiceUpdateLambda } from "./resouce-wrapper/service-update-lambda";
 
 type TProps = cdk.StackProps & {
-  projectName: string;
-  deployMode: TPropsDeployMode;
+  config: TPropsParameters;
   vpc: ec2.Vpc;
 };
 
-export class EcsStack extends cdk.Stack {
+export class ApplicationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: TProps) {
-    super(scope, id, props);
+    super(scope, id);
 
-    const cluster = new ecs.Cluster(this, `${props.projectName}-ecs-cluster`, {
-      clusterName: `${props.projectName}-ecs-cluster`,
+    const config = props.config;
+
+    const cluster = new ecs.Cluster(this, `${config.projectName}-ecs-cluster`, {
+      clusterName: `${config.projectName}-${config.env}-cluster`,
       vpc: props.vpc,
     });
 
-    if (props.deployMode.type === "frontAndBack") {
+    if (config.deployMode.type === "frontAndBack") {
       const backRepo = createEcrRepository(
         this,
-        `${props.projectName}-back-repo`
+        `${config.projectName}-${config.env}-back-repo`
       );
       const frontRepo = createEcrRepository(
         this,
-        `${props.projectName}-front-repo`
+        `${config.projectName}-${config.env}-front-repo`
       );
 
       const alb = createLoadBalancerFrontAndBack(
         this,
-        props.projectName,
-        props.deployMode.frontendHealthCheckPath,
-        props.deployMode.frontendPort,
-        props.deployMode.backendHealthCheckPath,
-        props.deployMode.backendPort,
+        `${config.projectName}-${config.env}`,
+        config.deployMode.frontendHealthCheckPath,
+        config.deployMode.frontendPort,
+        config.deployMode.backendHealthCheckPath,
+        config.deployMode.backendPort,
         props.vpc
       );
 
       const frontTaskDef = createEcsTaskDefinition(
         this,
-        `${props.projectName}-frontend`,
-        props.deployMode.frontendCpu,
-        props.deployMode.frontendMemoryLimitMiB
+        `${config.projectName}-${config.env}-front`,
+        config.deployMode.frontendCpu,
+        config.deployMode.frontendMemoryLimitMiB
       );
       const fargateFrontService = createFargateService(
         this,
-        `${props.projectName}-frontend`,
+        `${config.projectName}-${config.env}-front`,
         cluster,
         props.vpc,
-        props.deployMode.defaultFrontRepoName,
-        props.deployMode.frontendPort,
+        config.deployMode.defaultFrontRepoName,
+        config.deployMode.frontendPort,
         frontTaskDef.taskDefinition,
         alb.albSG
       );
 
       const backTaskDef = createEcsTaskDefinition(
         this,
-        `${props.projectName}-backend`,
-        props.deployMode.backendCpu,
-        props.deployMode.backendMemoryLimitMiB
+        `${config.projectName}-${config.env}-back`,
+        config.deployMode.backendCpu,
+        config.deployMode.backendMemoryLimitMiB
       );
 
       const fargateBackService = createFargateService(
         this,
-        `${props.projectName}-backend`,
+        `${config.projectName}-${config.env}-back`,
         cluster,
         props.vpc,
-        props.deployMode.defaultBackRepoName,
-        props.deployMode.backendPort,
+        config.deployMode.defaultBackRepoName,
+        config.deployMode.backendPort,
         backTaskDef.taskDefinition,
         alb.albSG
       );
@@ -85,50 +86,53 @@ export class EcsStack extends cdk.Stack {
 
       createServiceUpdateLambda(
         this,
-        `${props.projectName}-front-update`,
+        `${config.projectName}-${config.env}-front`,
         frontTaskDef.taskDefinition.family,
         frontRepo.repositoryName,
         frontTaskDef.taskRole.roleArn,
         frontTaskDef.taskExecRole.roleArn,
         cluster.clusterArn,
         fargateFrontService.serviceArn,
-        props.deployMode.frontendPort.toString()
+        config.deployMode.frontendPort
       );
 
       createServiceUpdateLambda(
         this,
-        `${props.projectName}-back-update`,
+        `${config.projectName}-${config.env}-back`,
         backTaskDef.taskDefinition.family,
         backRepo.repositoryName,
         backTaskDef.taskRole.roleArn,
         backTaskDef.taskExecRole.roleArn,
         cluster.clusterArn,
         fargateBackService.serviceArn,
-        props.deployMode.backendPort.toString()
+        config.deployMode.backendPort
       );
     } else {
-      const ecrRepo = createEcrRepository(this, `${props.projectName}-repo`);
+      const ecrRepo = createEcrRepository(
+        this,
+        `${config.projectName}-${config.env}-repo`
+      );
 
       const alb = createLoadBalancerSingleApp(
         this,
-        props.projectName,
-        props.deployMode.healthCheckPath,
-        props.deployMode.port,
+        `${config.projectName}-${config.env}`,
+        config.deployMode.healthCheckPath,
+        config.deployMode.port,
         props.vpc
       );
       const task = createEcsTaskDefinition(
         this,
-        props.projectName,
-        props.deployMode.cpu,
-        props.deployMode.memoryLimitMiB
+        `${config.projectName}-${config.env}`,
+        config.deployMode.cpu,
+        config.deployMode.memoryLimitMiB
       );
       const service = createFargateService(
         this,
-        props.projectName,
+        `${config.projectName}-${config.env}`,
         cluster,
         props.vpc,
-        props.deployMode.defaultRepoName,
-        props.deployMode.port,
+        config.deployMode.defaultRepoName,
+        config.deployMode.port,
         task.taskDefinition,
         alb.albSG
       );
@@ -137,14 +141,14 @@ export class EcsStack extends cdk.Stack {
 
       createServiceUpdateLambda(
         this,
-        `${props.projectName}-repo-update`,
+        `${config.projectName}-${config.env}`,
         task.taskDefinition.family,
         ecrRepo.repositoryName,
         task.taskRole.roleArn,
         task.taskExecRole.roleArn,
         cluster.clusterArn,
         service.serviceArn,
-        props.deployMode.port.toString()
+        config.deployMode.port
       );
     }
   }
