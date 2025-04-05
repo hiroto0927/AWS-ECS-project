@@ -1,16 +1,19 @@
 import * as cdk from "aws-cdk-lib";
 import { ApplicationStack } from "../lib/application-stack";
 import { NetworkStack } from "../lib/network-stack";
-import { TPropsParameters } from "../types/parameter";
+import { TParameters } from "../types/parameter";
 
-const parameters: TPropsParameters = {
-  projectName: "sample-project",
-  env: "dev",
+const parameters: TParameters = {
+  projectName: "sample-project", // プロジェクト名を入力
+  env: "dev", // 環境名を入力
   deployMode: {
-    type: "singleApplication",
-    healthCheckPath: "/api/health-check",
-    port: 8000,
-    defaultRepoName: "common-fastapi",
+    type: "frontAndBack", // アプリケーションの構成タイプ
+    frontendHealthCheckPath: "/api/health-check", // フロントエンドのヘルスチェックパス
+    frontendPort: 3000, // フロントエンドのポート番号
+    defaultFrontRepoName: "common-nextjs", // ECSで初回起動する際に利用するフロントエンドのリポジトリ名
+    backendHealthCheckPath: "/api/health-check", // バックエンドのヘルスチェックパス
+    backendPort: 8000, // バックエンドのポート番号
+    defaultBackRepoName: "common-fastapi", // ECSで初回起動する際に利用するバックエンドのリポジトリ名
   },
 };
 

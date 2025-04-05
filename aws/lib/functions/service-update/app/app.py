@@ -3,7 +3,6 @@ import json
 import os
 
 
-SERVICE_NAME = os.getenv("SERVICE_NAME")
 TASK_ROLE_ARN = os.getenv("TASK_ROLE_ARN")
 TASK_EXEC_ROLE_ARN = os.getenv("TASK_EXEC_ROLE_ARN")
 MEMORY = int(os.getenv("MEMORY"))
@@ -12,6 +11,7 @@ CLUSTER_ARN = os.getenv("CLUSTER_ARN")
 SERVICE_ARN = os.getenv("SERVICE_ARN")
 PORT = int(os.getenv("PORT"))
 FAMILY = os.getenv("FAMILY")
+CONTAINER_NAME = os.getenv("CONTAINER_NAME")
 
 ecs_client = boto3.client("ecs")
 
@@ -44,7 +44,7 @@ def create_task_definition(event):
         requiresCompatibilities=["FARGATE"],
         containerDefinitions=[
             {
-                "name": FAMILY,
+                "name": CONTAINER_NAME,
                 "image": f"{event['account']}.dkr.ecr.ap-northeast-1.amazonaws.com/{event['detail']['repository-name']}:{event['detail']['image-tag']}",
                 "cpu": CPU,
                 "memory": MEMORY,
@@ -64,6 +64,7 @@ def create_task_definition(event):
 
 
 def update_service(task_definition):
+
     response = ecs_client.update_service(
         cluster=CLUSTER_ARN,
         deploymentConfiguration={"maximumPercent": 200, "minimumHealthyPercent": 50},

@@ -1,16 +1,16 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { TPropsParameters } from "../types/parameter";
+import { TParameters } from "../types/parameter";
 
-type TPropsNetworkStack = cdk.StackProps & {
-  config: TPropsParameters;
+type TNetworkStack = cdk.StackProps & {
+  config: TParameters;
 };
 
 export class NetworkStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
 
-  constructor(scope: Construct, id: string, props: TPropsNetworkStack) {
+  constructor(scope: Construct, id: string, props: TNetworkStack) {
     super(scope, id);
 
     const config = props.config;
