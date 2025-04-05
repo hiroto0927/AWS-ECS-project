@@ -1,25 +1,11 @@
-#!/usr/bin/env node
-import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { EcsStack } from "../lib/ecs-stack";
-import { VpcStack } from "../lib/vpc-stack";
+import { ApplicationStack } from "../lib/application-stack";
+import { NetworkStack } from "../lib/network-stack";
 import { TPropsParameters } from "../types/parameter";
-
-// const parameters: TPropsParameters = {
-//   projectName: "sample-project",
-//   deployMode: {
-//     type: "frontAndBack",
-//     frontendHealthCheckPath: "/api/health-check",
-//     frontendPort: 3000,
-//     defaultFrontRepoName: "common-nextjs",
-//     backendHealthCheckPath: "/api/health-check",
-//     backendPort: 8000,
-//     defaultBackRepoName: "common-fastapi",
-//   },
-// };
 
 const parameters: TPropsParameters = {
   projectName: "sample-project",
+  env: "dev",
   deployMode: {
     type: "singleApplication",
     healthCheckPath: "/api/health-check",
@@ -30,12 +16,19 @@ const parameters: TPropsParameters = {
 
 const app = new cdk.App();
 
-const vpc = new VpcStack(app, `VpcForECS-${parameters.projectName}`, {
-  projectName: parameters.projectName,
+const vpc = new NetworkStack(app, `VpcForECS-${parameters.projectName}`, {
+  config: parameters,
+  env: {
+    account: process.env.ACCOUNT_ID,
+    region: process.env.REGION,
+  },
 });
 
-const ecs = new EcsStack(app, `EcsStack-${parameters.projectName}`, {
-  projectName: parameters.projectName,
-  deployMode: parameters.deployMode,
+new ApplicationStack(app, `EcsStack-${parameters.projectName}`, {
+  config: parameters,
   vpc: vpc.vpc,
+  env: {
+    account: process.env.ACCOUNT_ID,
+    region: process.env.REGION,
+  },
 });

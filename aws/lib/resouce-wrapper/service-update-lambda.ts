@@ -14,24 +14,26 @@ export function createServiceUpdateLambda(
   taskExecRoleArn: string,
   clusterArn: string,
   serviceArn: string,
-  port: string,
-  memory?: string,
-  cpu?: string
+  port: number,
+  memory?: number,
+  cpu?: number
 ) {
-  const lambdaFunction = new lambda.DockerImageFunction(scope, name, {
+  const lambdaFunction = new lambda.Function(scope, name, {
     functionName: name,
-    code: lambda.DockerImageCode.fromImageAsset(
-      path.join(__dirname, "../lambdas/service-update")
+    code: lambda.Code.fromAsset(
+      path.join(__dirname, "../functions/service-update/app")
     ),
+    handler: "app.lambda_handler",
+    runtime: lambda.Runtime.PYTHON_3_12,
     environment: {
       SERVICE_NAME: name,
       TASK_ROLE_ARN: taskRoleArn,
       TASK_EXEC_ROLE_ARN: taskExecRoleArn,
-      MEMORY: memory ?? "512",
-      CPU: cpu ?? "256",
+      MEMORY: memory ? memory.toString() : "512",
+      CPU: cpu ? cpu.toString() : "256",
       CLUSTER_ARN: clusterArn,
       SERVICE_ARN: serviceArn,
-      PORT: port,
+      PORT: port.toString(),
       FAMILY: family,
     },
   });
@@ -74,5 +76,3 @@ export function createServiceUpdateLambda(
     targets: [new targets.LambdaFunction(lambdaFunction)],
   });
 }
-
-// arn:aws:ecs:ap-northeast-1:859871104911:service/sample-project-ecs-cluster/EcsStack-sample-project-sampleprojectserviceService319604D1-vxrsE3Jf7AaQ
