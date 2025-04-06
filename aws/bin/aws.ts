@@ -2,9 +2,10 @@ import * as cdk from "aws-cdk-lib";
 import { ApplicationStack } from "../lib/application-stack";
 import { NetworkStack } from "../lib/network-stack";
 import { TParameters } from "../types/parameter";
+import { toPascalCase } from "../lib/utils/string";
 
 const parameters: TParameters = {
-  projectName: "sample", // プロジェクト名を入力
+  projectName: "sample-project", // プロジェクト名を入力
   env: "dev", // 環境名を入力
   deployMode: {
     type: "frontAndBack", // アプリケーションの構成タイプ
@@ -19,19 +20,23 @@ const parameters: TParameters = {
 
 const app = new cdk.App();
 
-const vpc = new NetworkStack(app, `VpcForECS-${parameters.projectName}`, {
+const accountId = process.env.ACCOUNT_ID;
+const region = process.env.REGION;
+const name = toPascalCase(`${parameters.projectName}-${parameters.env}`);
+
+const network = new NetworkStack(app, `${name}NetworkStack`, {
   config: parameters,
   env: {
-    account: process.env.ACCOUNT_ID,
-    region: process.env.REGION,
+    account: accountId,
+    region: region,
   },
 });
 
-new ApplicationStack(app, `EcsStack-${parameters.projectName}`, {
+new ApplicationStack(app, `${name}ApplicationStack`, {
   config: parameters,
-  vpc: vpc.vpc,
+  vpc: network.vpc,
   env: {
-    account: process.env.ACCOUNT_ID,
-    region: process.env.REGION,
+    account: accountId,
+    region: region,
   },
 });

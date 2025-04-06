@@ -23,7 +23,7 @@ export class ServiceUpdateConstruct extends Construct {
   constructor(scope: Construct, id: string, props: TServiceUpdate) {
     super(scope, id);
 
-    const repository = new ecr.Repository(this, "EcrRepository", {
+    const repository = new ecr.Repository(this, "ContainerImageRepository", {
       repositoryName: props.name,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       emptyOnDelete: true,

@@ -3,21 +3,23 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { TParameters } from "../../types/parameter";
 
-interface TAppClusterProps {
+interface TCluster {
   config: TParameters;
   vpc: ec2.IVpc;
 }
 
-export class AppClusterConstruct extends Construct {
+export class ClusterConstruct extends Construct {
   public readonly cluster: ecs.ICluster;
 
-  constructor(scope: Construct, id: string, props: TAppClusterProps) {
+  constructor(scope: Construct, id: string, props: TCluster) {
     super(scope, id);
 
     const config = props.config;
 
+    const name = `${config.projectName}-${config.env}`;
+
     this.cluster = new ecs.Cluster(this, `EcsCluster`, {
-      clusterName: `${config.projectName}-${config.env}-cluster`,
+      clusterName: name,
       vpc: props.vpc,
     });
   }

@@ -1,30 +1,30 @@
 import { Construct } from "constructs";
 import { TParameters } from "../../types/parameter";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { ContainerFargateServicesConstruct } from "./container-service";
+import { toKebabCase } from "../utils/string";
 
 interface TMultiAppLoadbalancer {
   config: TParameters;
   vpc: ec2.IVpc;
+  cluster: ecs.ICluster;
 }
 
 export class MultiAppLoadbalancerConstruct extends Construct {
-  public readonly loadBalancer: elbv2.IApplicationLoadBalancer;
-  public readonly targetFrontGroup: elbv2.IApplicationTargetGroup;
-  public readonly targetBackGroup: elbv2.IApplicationTargetGroup;
-  public readonly securityGroup: ec2.ISecurityGroup;
-
   constructor(scope: Construct, id: string, props: TMultiAppLoadbalancer) {
     super(scope, id);
 
     const config = props.config;
+    const name = toKebabCase(`${config.projectName}-${config.env}`);
 
     if (config.deployMode.type === "singleApplication") {
       throw new Error("This construct is not for single application mode");
     }
 
     const securityGroup = new ec2.SecurityGroup(this, `SecurityGroup`, {
-      securityGroupName: `${config.projectName}-${config.env}-sg`,
+      securityGroupName: `${name}-sg`,
       vpc: props.vpc,
       allowAllOutbound: true,
     });
@@ -33,7 +33,7 @@ export class MultiAppLoadbalancerConstruct extends Construct {
     securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443));
 
     const alb = new elbv2.ApplicationLoadBalancer(this, `Loadbalancer`, {
-      loadBalancerName: `${config.projectName}-${config.env}-alb`,
+      loadBalancerName: `${name}-alb`,
       vpc: props.vpc,
       securityGroup: securityGroup,
       internetFacing: true,
@@ -43,7 +43,7 @@ export class MultiAppLoadbalancerConstruct extends Construct {
       this,
       `FrontendTargetGroup`,
       {
-        targetGroupName: `${config.projectName}-${config.env}-front-tg`,
+        targetGroupName: `${name}-front-tg`,
         vpc: props.vpc,
         port: config.deployMode.frontendPort,
         protocol: elbv2.ApplicationProtocol.HTTP,
@@ -60,7 +60,7 @@ export class MultiAppLoadbalancerConstruct extends Construct {
       this,
       `BackendTargetGroup`,
       {
-        targetGroupName: `${config.projectName}-${config.env}-back-tg`,
+        targetGroupName: `${name}-back-tg`,
         vpc: props.vpc,
         port: config.deployMode.backendPort,
         protocol: elbv2.ApplicationProtocol.HTTP,
@@ -100,9 +100,14 @@ export class MultiAppLoadbalancerConstruct extends Construct {
       targetGroups: [targetBackGroup],
     });
 
-    this.loadBalancer = alb;
-    this.targetFrontGroup = targetFrontGroup;
-    this.targetBackGroup = targetBackGroup;
-    this.securityGroup = securityGroup;
+    const fargate = new ContainerFargateServicesConstruct(this, `Application`, {
+      config: config,
+      vpc: props.vpc,
+      cluster: props.cluster,
+      loadbalancerSecurityGroup: securityGroup,
+    });
+
+    targetFrontGroup.addTarget(fargate.services[0]);
+    targetBackGroup.addTarget(fargate.services[1]);
   }
 }

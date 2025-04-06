@@ -2,10 +2,9 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { TParameters } from "../types/parameter";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { AppClusterConstruct } from "./constructs/cluster";
+import { ClusterConstruct } from "./constructs/cluster";
 import { MultiAppLoadbalancerConstruct } from "./constructs/multi-app-loadbalancer";
-import { SingleAppLoadbalancerConstruct } from "./constructs/single-app-loadbalancer";
-import { ContainerFargateServicesConstruct } from "./constructs/container-service";
+import { SingleApplicationConstruct } from "./constructs/single-app-loadbalancer";
 
 type TApplicationStack = cdk.StackProps & {
   config: TParameters;
@@ -18,48 +17,28 @@ export class ApplicationStack extends cdk.Stack {
 
     const config = props.config;
 
-    const cluster = new AppClusterConstruct(this, `AppCluster`, {
+    const cluster = new ClusterConstruct(this, `Cluster`, {
       config: config,
       vpc: props.vpc,
     }).cluster;
 
-    if (config.deployMode.type === "frontAndBack") {
-      const alb = new MultiAppLoadbalancerConstruct(this, `Loadbalancer`, {
-        config: config,
-        vpc: props.vpc,
-      });
-
-      const fargate = new ContainerFargateServicesConstruct(
-        this,
-        `ContainerService`,
-        {
+    switch (config.deployMode.type) {
+      case "frontAndBack":
+        new MultiAppLoadbalancerConstruct(this, `Application`, {
           config: config,
           vpc: props.vpc,
           cluster: cluster,
-          loadbalancerSecurityGroup: alb.securityGroup,
-        }
-      );
-
-      alb.targetFrontGroup.addTarget(fargate.services[0]);
-      alb.targetBackGroup.addTarget(fargate.services[1]);
-    } else {
-      const alb = new SingleAppLoadbalancerConstruct(this, `Loadbalancer`, {
-        config: config,
-        vpc: props.vpc,
-      });
-
-      const fargate = new ContainerFargateServicesConstruct(
-        this,
-        `ContainerService`,
-        {
+        });
+        break;
+      case "singleApplication":
+        new SingleApplicationConstruct(this, `Application`, {
           config: config,
           vpc: props.vpc,
           cluster: cluster,
-          loadbalancerSecurityGroup: alb.securityGroup,
-        }
-      );
-
-      alb.targetGroup.addTarget(fargate.services[0]);
+        });
+        break;
+      default:
+        throw new Error("Invalid deploy mode");
     }
   }
 }

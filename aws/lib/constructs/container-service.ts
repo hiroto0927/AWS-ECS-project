@@ -4,6 +4,7 @@ import { TParameters } from "../../types/parameter";
 import { TaskDefinitionConstruct } from "./task-definition";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { ServiceUpdateConstruct } from "./service-update";
+import { toKebabCase } from "../utils/string";
 
 interface TContainerService {
   config: TParameters;
@@ -19,10 +20,11 @@ export class ContainerFargateServicesConstruct extends Construct {
     super(scope, id);
 
     const config = props.config;
+    const name = toKebabCase(`${config.projectName}-${config.env}`);
 
     if (config.deployMode.type === "frontAndBack") {
-      const frontendName = `${config.projectName}-${config.env}-front`;
-      const backendName = `${config.projectName}-${config.env}-back`;
+      const frontendName = `${name}-front`;
+      const backendName = `${name}-back`;
 
       const backTask = new TaskDefinitionConstruct(this, `FargateBackTaskDef`, {
         name: backendName,
@@ -66,20 +68,30 @@ export class ContainerFargateServicesConstruct extends Construct {
         props.loadbalancerSecurityGroup,
         ec2.Port.tcp(config.deployMode.backendPort)
       );
-      const frontService = new ecs.FargateService(this, `FargateFrontService`, {
+      const frontService = new ecs.FargateService(this, `FrontendApplication`, {
+        serviceName: frontendName,
         cluster: props.cluster,
         vpcSubnets: { subnets: props.vpc.privateSubnets },
         taskDefinition: frontTask.definition,
         securityGroups: [securityGroup],
+        circuitBreaker: {
+          enable: true,
+          rollback: true,
+        },
       });
-      const backService = new ecs.FargateService(this, `FargateBackService`, {
+      const backService = new ecs.FargateService(this, `BackendApplication`, {
+        serviceName: backendName,
         cluster: props.cluster,
         vpcSubnets: { subnets: props.vpc.privateSubnets },
         taskDefinition: backTask.definition,
         securityGroups: [securityGroup],
+        circuitBreaker: {
+          enable: true,
+          rollback: true,
+        },
       });
 
-      new ServiceUpdateConstruct(this, `UpdateFrontService`, {
+      new ServiceUpdateConstruct(this, `UpdateFrontend`, {
         name: frontendName,
         env: config.env,
         cluster: props.cluster,
@@ -89,7 +101,7 @@ export class ContainerFargateServicesConstruct extends Construct {
         port: config.deployMode.frontendPort,
         family: frontTask.definition.family,
       });
-      new ServiceUpdateConstruct(this, `UpdateBackendService`, {
+      new ServiceUpdateConstruct(this, `UpdateBackend`, {
         name: backendName,
         env: config.env,
         cluster: props.cluster,
@@ -104,10 +116,10 @@ export class ContainerFargateServicesConstruct extends Construct {
     }
 
     if (config.deployMode.type === "singleApplication") {
-      const applicationName = `${config.projectName}-${config.env}-app`;
+      const appName = `${name}-app`;
 
       const task = new TaskDefinitionConstruct(this, `FargateTaskDef`, {
-        name: applicationName,
+        name: appName,
         cpu: config.deployMode.cpu,
         memory: config.deployMode.memoryLimitMiB,
       });
@@ -115,13 +127,13 @@ export class ContainerFargateServicesConstruct extends Construct {
       task.addContainer(
         config.deployMode.defaultRepoName,
         config.deployMode.port,
-        applicationName
+        appName
       );
 
       const securityGroup = new ec2.SecurityGroup(this, `SecurityGroup`, {
         vpc: props.vpc,
         allowAllOutbound: true,
-        securityGroupName: `${config.projectName}-${config.env}-container-sg`,
+        securityGroupName: `${appName}-container-sg`,
       });
 
       securityGroup.addIngressRule(
@@ -129,16 +141,20 @@ export class ContainerFargateServicesConstruct extends Construct {
         ec2.Port.tcp(config.deployMode.port)
       );
 
-      const service = new ecs.FargateService(this, `FargateService`, {
-        serviceName: applicationName,
+      const service = new ecs.FargateService(this, `Application`, {
+        serviceName: appName,
         cluster: props.cluster,
         vpcSubnets: { subnets: props.vpc.privateSubnets },
         taskDefinition: task.definition,
         securityGroups: [securityGroup],
+        circuitBreaker: {
+          enable: true,
+          rollback: true,
+        },
       });
 
       new ServiceUpdateConstruct(this, `ServiceUpdate`, {
-        name: applicationName,
+        name: appName,
         env: config.env,
         cluster: props.cluster,
         service: service,

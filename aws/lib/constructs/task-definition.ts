@@ -3,6 +3,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { TCpu, TMemory } from "../../types/parameter";
 import * as cdk from "aws-cdk-lib";
+import { toKebabCase } from "../utils/string";
 
 interface TTaskDefinition {
   name: string;
@@ -18,18 +19,21 @@ export class TaskDefinitionConstruct extends Construct {
   constructor(scope: Construct, id: string, props: TTaskDefinition) {
     super(scope, id);
 
+    const name = toKebabCase(props.name);
+
     const taskExecRole = new iam.Role(this, `EcsTaskExecRole`, {
-      roleName: `${props.name}-exec-role`,
+      roleName: `${name}-task-exec-role`,
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
     const taskRole = new iam.Role(this, `EcsTaskRole`, {
-      roleName: `${props.name}-ecs-task-role`,
+      roleName: `${name}-task-role`,
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
     taskRole.attachInlinePolicy(
       new iam.Policy(this, `IamPolicy`, {
+        policyName: `${name}-task-role`,
         statements: [
           new iam.PolicyStatement({
             actions: [
