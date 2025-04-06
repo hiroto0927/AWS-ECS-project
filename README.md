@@ -40,7 +40,7 @@ Amazon ECR に ECS で初回デプロイするためのリポジトリとイメ�
 **フロントエンドとバックエンドの構成**
 
 ```ts
-const parameters: TPropsParameters = {
+const parameters: TParameters = {
   projectName: "sample-project", // プロジェクト名を入力
   deployMode: {
     type: "frontAndBack", // アプリケーションの構成タイプ
@@ -57,7 +57,7 @@ const parameters: TPropsParameters = {
 **単一アプリケーションの構成**
 
 ```ts
-const parameters: TPropsParameters = {
+const parameters: TParameters = {
   projectName: "sample-project",
   env: "dev",
   deployMode: {
@@ -82,5 +82,5 @@ const parameters: TPropsParameters = {
 # 削除方法
 
 1. `aws`フォルダに移動
-2. `npm run destroy`を実行する。
+2. `npm run destroy --all`を実行する。
 3. リソースの削除完了。
