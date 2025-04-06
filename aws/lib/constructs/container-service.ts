@@ -57,7 +57,7 @@ export class ContainerFargateServicesConstruct extends Construct {
       const securityGroup = new ec2.SecurityGroup(this, `SecurityGroup`, {
         vpc: props.vpc,
         allowAllOutbound: true,
-        securityGroupName: `${config.projectName}-${config.env}-container-sg`,
+        securityGroupName: `${name}-container-sg`,
       });
 
       securityGroup.addIngressRule(
